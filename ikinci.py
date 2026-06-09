@@ -25,54 +25,37 @@ st.title("🍳 Evdə Nə Var? — Əlihüseynin süni zəkası ilə öyrən")
 st.write("Əlinizdə olan qidaları qeyd edin, Süni İntellekt sizə dünya mətbəxlərindən unikal reseptlər hazırlasın!")
 
 # İstifadəçidən giriş məlumatlarının alınması
-erzaqlar = st.text_input("Evdə hansı ərzaqlar var? (Məsələn: kartof, toyuq, soğan, pomidor)",
-                         placeholder="Ərzaqları vergüllə ayıraraq yazın...")
 
-# Mətbəx seçimi
-metbex = st.selectbox(
-    "Hansı istiqamətdə resept istəyirsiniz?",
-    ["Milli Mətbəx (Azərbaycan)", "Avropa Mətbəxi", "Asiya Mətbəxi", "Ümumdünya/Qarışıq Mətbəx"]
-)
+with st.form("resept_formu"):
+    erzaqlar = st.text_input(
+        label="Evdə hansı ərzaqlar var? (Məsələn: kartof, toyuq, soğan, pomidor)",
+        placeholder="Ərzaqları vergüllə ayıraraq yazın..."
+    )
 
-# Dil seçimi
-dil = st.radio("Reseptin yazılma dili / Язык рецепта / Recipe Language:", ["Azərbaycan dili", "Русский", "English"],
-               horizontal=True)
+    metbex = st.selectbox(
+        label="Hansı istiqamətdə resept istəyirsiniz?",
+        options=["Milli Mətbəx (Azərbaycan)", "Avropa Mətbəxi", "Asiya Mətbəxi", "Ümumdünya/Qarışıq Mətbəx"]
+    )
 
-# ====================================================================
-# 3. SÜNİ İNTELLEKTİN GENERASİYA PROSESİ
-# ====================================================================
-if st.button("✨ Ən Optimal Resepti Tap"):
+    dil = st.radio(
+        label="Reseptin yazılma dili / Язык рецепта / Recipe Language:",
+        options=["Azərbaycan dili", "Русский", "English"],
+        horizontal=True
+    )
+
+    # Form daxilindəki rəsmi təsdiq düyməsi
+    submit_button = st.form_submit_button("✨ Ən Optimal Resepti Tap")
+
+# Düymə sıxıldıqda icra olunacaq hissə
+if submit_button:
     if erzaqlar:
         with st.spinner("Süni İntellekt reseptləri təhlil edir, zəhmət olmasa gözləyin..."):
+            prompt = f"Mənə elə bir resept hazırla ki, tərkibində mütləq bu ərzaqlar olsun: {erzaqlar}. İstiqamət: {metbex}. Cavabı yalnız bu dildə yaz: {dil}."
             try:
-                # Prompt Engineering: Süni intellektə rol və dəqiq təlimatlar veririk
-                prompt = f"""
-                Sən peşəkar bir şef-aşpaz və Süni İntellekt köməkçisən. 
-                İstifadəçinin əlində yalnız bu ərzaqlar var: {erzaqlar}.
-                Səndən istənilən mətbəx növü: {metbex}.
-
-                Tapşırıq:
-                1. Bu ərzaqlardan istifadə edərək hazırlana biləcək ən optimal və dadlı yemək reseptini tap.
-                2. Cavabı tamamilə bu dildə yaz: {dil}.
-                3. Cavabın strukturu belə olsun:
-                   - Yeməyin Adı (Mətbəx növünə uyğun kreativ ad)
-                   - Lazım olan və istifadə edilən ərzaqların siyahısı
-                   - Addım-addım hazırlanma qaydası (Sadə və aydın)
-                   - Şefin tövsiyəsi (Kiçik bir dad sirri və ya məsləhət)
-
-                Əgər verilən ərzaqlarla heç bir yemək hazırlamaq mümkün deyilsə, istifadəçiyə nəzakətlə bildirin və əlavə hansı kiçik ərzağı alsa nələr edə biləcəyini təklif edin.
-                """
-
-                # AI Modelinə sorğu göndəririk
                 response = model.generate_content(prompt)
-
-                # Nəticəni ekranda göstəririk
-                st.success("🎉 Reseptiniz Hazırdır!")
-                st.markdown("---")
-                st.markdown(response.text)
-                st.markdown("---")
-
+                st.success("Budur sənin unikal reseptin:")
+                st.write(response.text)
             except Exception as e:
-                st.error(f"Xəta baş verdi. API açarınızı yoxlayın və ya bir az sonra yenidən cəhd edin. {e}")
+                st.error(f"Xəta baş verdi. Bir az sonra yenidən cəhd edin. {e}")
     else:
-        st.warning("Zəhmət olmasa, ən azı bir neçə ərzaq adı daxil edin.")
+        st.warning("Zəhmət olmasa, əvvəlcə evdə olan ərzaqları qeyd edin!")
