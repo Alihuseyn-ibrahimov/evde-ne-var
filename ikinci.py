@@ -7,8 +7,9 @@ import urllib.parse
 # ====================================================================
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 genai.configure(api_key=GOOGLE_API_KEY)
-# Qeyd: Hazırda ən aktual model gemini-1.5-flash-dır
-model = genai.GenerativeModel('gemini-1.5-flash')
+
+# Modeli yenidən sizin ilkin versiyaya qaytarırıq:
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 # ====================================================================
 # 2. VİZUAL DİZAYN
