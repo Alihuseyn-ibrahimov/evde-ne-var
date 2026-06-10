@@ -1,15 +1,17 @@
 import streamlit as st
 import google.generativeai as genai
+import urllib.parse
 
 # ====================================================================
 # 1. AI MODELİNİN AYARLANMASI
 # ====================================================================
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-2.5-flash')
+# Qeyd: Hazırda ən aktual model gemini-1.5-flash-dır
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 # ====================================================================
-# 2. VİZUAL DİZAYN — MİLLİ ORNAMENT + CANLİ RƏNGLƏR
+# 2. VİZUAL DİZAYN
 # ====================================================================
 st.set_page_config(
     page_title="Evdə Nə Var? — AI Resept Botu",
@@ -33,47 +35,23 @@ st.markdown("""
 
 .stApp {
   background-color: var(--fon);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23D4A017' stroke-width='0.6' opacity='0.25'%3E%3Cpolygon points='40,8 47,20 60,20 52,30 56,43 40,36 24,43 28,30 20,20 33,20' /%3E%3Ccircle cx='0' cy='0' r='8' /%3E%3Ccircle cx='80' cy='0' r='8' /%3E%3Ccircle cx='0' cy='80' r='8' /%3E%3Ccircle cx='80' cy='80' r='8' /%3E%3Crect x='2' y='2' width='76' height='76' rx='4' /%3E%3Cline x1='40' y1='2' x2='40' y2='78' /%3E%3Cline x1='2' y1='40' x2='78' y2='40' /%3E%3Cline x1='2' y1='2' x2='78' y2='78' /%3E%3Cline x1='78' y1='2' x2='2' y2='78' /%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23D4A017' stroke-width='0.6' opacity='0.25'%3E%3Cpolygon points='40,8 47,20 60,20 52,30 56,43 40,36 24,43 28,30 20,20 33,20' /%3E%3Crect x='2' y='2' width='76' height='76' rx='4' /%3E%3C/g%3E%3C/svg%3E");
   background-size: 80px 80px;
-  font-family: 'Inter', sans-serif;
 }
 
 .hero-block {
   background: linear-gradient(135deg, var(--nar) 0%, #8B1A1A 50%, #5C0E0E 100%);
   border-radius: 20px;
-  padding: 2.5rem 2rem 2rem;
-  margin-bottom: 2rem;
+  padding: 2rem;
   text-align: center;
   box-shadow: 0 8px 32px rgba(192,57,43,0.35);
+  margin-bottom: 1.5rem;
 }
 
 .hero-title {
   font-family: 'Cinzel', serif;
   font-size: 2.2rem;
-  font-weight: 700;
   color: #FFD700;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
-}
-
-.hero-subtitle {
-  font-size: 1rem;
-  color: rgba(255,248,230,0.9);
-}
-
-.ornament-divider {
-  text-align: center;
-  font-size: 1.5rem;
-  color: var(--qizil);
-  letter-spacing: 0.5rem;
-  margin: 0.5rem 0 1.5rem;
-}
-
-/* Kart strukturlarını təmiz Streamlit containerlərinə tətbiq edirik */
-div[data-testid="stForm"] {
-  background: var(--işıq);
-  border: 2px solid rgba(212,160,23,0.4) !important;
-  padding: 2rem !important;
-  border-radius: 16px;
 }
 
 .section-title {
@@ -83,195 +61,149 @@ div[data-testid="stForm"] {
   font-weight: 600;
   border-bottom: 2px solid var(--krem);
   padding-bottom: 0.4rem;
-  margin-top: 1rem;
+  margin-top: 1.2rem;
   margin-bottom: 0.8rem;
 }
 
-.stTextInput > div > div > input,
-.stTextArea > div > div > textarea {
-  background: white !important;
-  border: 2px solid rgba(212,160,23,0.3) !important;
-  border-radius: 10px !important;
-}
-
-.stTextInput > div > div > input:focus,
-.stTextArea > div > div > textarea:focus {
-  border-color: var(--nar) !important;
-}
-
-.stButton > button, .stFormSubmitButton > button {
-  background: linear-gradient(135deg, var(--nar), #8B1A1A) !important;
-  color: #FFD700 !important;
-  font-family: 'Cinzel', serif !important;
-  font-weight: 700 !important;
-  font-size: 1.1rem !important;
-  border-radius: 12px !important;
-  box-shadow: 0 4px 15px rgba(192,57,43,0.4) !important;
-}
-
-.result-box {
-  background: linear-gradient(135deg, #FFFBF0, #FEF3C7);
-  border: 2px solid var(--qizil);
+div[data-testid="stForm"] {
+  background: var(--işıq);
+  border: 2px solid rgba(212,160,23,0.4) !important;
+  padding: 2rem !important;
   border-radius: 16px;
-  padding: 1.8rem;
-  margin-top: 1.5rem;
 }
 
-.footer {
-  text-align: center;
-  color: rgba(28,16,8,0.4);
-  font-size: 0.8rem;
-  margin-top: 3rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(212,160,23,0.2);
+.recipe-img {
+    border-radius: 15px;
+    border: 3px solid var(--qizil);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    margin-bottom: 20px;
+}
+
+.allergy-warning {
+    background-color: #FDEDEC;
+    border-left: 5px solid #E74C3C;
+    padding: 10px;
+    color: #943126;
+    font-size: 0.9rem;
+    border-radius: 5px;
+    margin-bottom: 15px;
 }
 </style>
 """, unsafe_allow_html=True)
 
+# ====================================================================
+# 3. KÖMƏKÇİ FUNKSİYALAR
+# ====================================================================
+def get_image_url(food_name):
+    """Yemək adına uyğun olaraq Pollinations.ai vasitəsilə şəkil URL-i yaradır"""
+    encoded_name = urllib.parse.quote(f"professional food photography of {food_name}, high resolution, 4k, delicious, plated beautifully")
+    return f"https://pollinations.ai/p/{encoded_name}?width=1024&height=1024&nologo=true"
+
+# Session State
 if "ai_response" not in st.session_state:
     st.session_state.ai_response = None
+if "recipe_title" not in st.session_state:
+    st.session_state.recipe_title = None
 
-# ====================================================================
-# 3. BAŞLIQ HERO
-# ====================================================================
-st.markdown("""
-<div class="hero-block">
-  <div class="hero-title">🍳 Evdə Nə Var?</div>
-  <div class="hero-subtitle">Əlinizdəki ərzaqlardan AI sizə mükəmməl resept və qidalanma planı hazırlayır</div>
-</div>
-<div class="ornament-divider">✦ ◈ ✦ ◈ ✦</div>
-""", unsafe_allow_html=True)
+# Hero
+st.markdown('<div class="hero-block"><div class="hero-title">🍳 Evdə Nə Var?</div></div>', unsafe_allow_html=True)
 
-# ====================================================================
-# 4. REJİM SEÇİMİ (Formdan kənarda - Reaktivlik üçün)
-# ====================================================================
+# Rejim
 st.markdown('<div class="section-title">⚙️ Rejim seçin</div>', unsafe_allow_html=True)
-rejim = st.radio(
-    label="",
-    options=["🍽️ Adi Resept", "💪 İdmançı Rejimi (Kalori + Makro)"],
-    horizontal=True,
-    label_visibility="collapsed"
-)
+rejim = st.radio("", ["🍽️ Adi Resept", "💪 İdmançı Rejimi"], horizontal=True, label_visibility="collapsed")
 
 # ====================================================================
-# 5. VAHİD FORM
+# 4. FORM
 # ====================================================================
-with st.form("resept_formu_yeni"):
-    
+with st.form("master_form"):
     st.markdown('<div class="section-title">🧂 Ərzaqlarınız</div>', unsafe_allow_html=True)
-    erzaqlar = st.text_area(
-        label="Evdə hansı ərzaqlar var?",
-        placeholder="Məsələn: 200q toyuq döşü, 2 yumurta, kartof, soğan...\n\nİdmançı rejimində qram yazmağınız tövsiyə olunur.",
-        height=110,
-        label_visibility="collapsed"
+    erzaqlar = st.text_area("erzaq", placeholder="Məs: toyuq, qaymaq, göbələk...", height=100, label_visibility="collapsed")
+
+    # --- YENİ: ALLERGİYA BÖLMƏSİ ---
+    st.markdown('<div class="section-title">⚠️ Allergiyalar və Məhdudiyyətlər</div>', unsafe_allow_html=True)
+    allergiyalar = st.multiselect(
+        "Allergiyanız varmı?",
+        ["Süd məhsulları (Laktaza)", "Qoz-fındıq", "Qluten", "Yumurta", "Dəniz məhsulları", "Soya", "Balıq"],
+        help="Seçdiyiniz ərzaqlar reseptdən qəti şəkildə çıxarılacaq."
     )
+    xususi_allergiya = st.text_input("Digər (məs: bal, çiyələk)", placeholder="Xüsusi allergiya varsa qeyd edin")
 
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown('<div class="section-title">🌍 Mətbəx istiqaməti</div>', unsafe_allow_html=True)
-        metbex = st.selectbox(
-            label="",
-            options=[
-                "Milli Mətbəx (Azərbaycan)",
-                "Avropa Mətbəxi",
-                "Asiya Mətbəxi",
-                "Yüksək Protein (İdman)",
-                "Az Kalorili (Diet)",
-                "Ümumdünya/Qarışıq"
-            ],
-            label_visibility="collapsed"
-        )
-
+        st.markdown('<div class="section-title">🌍 Mətbəx</div>', unsafe_allow_html=True)
+        metbex = st.selectbox("", ["Azərbaycan", "Avropa", "Asiya", "İtaliya", "Dietik"], label_visibility="collapsed")
     with col2:
-        st.markdown('<div class="section-title">📝 Dil seçin</div>', unsafe_allow_html=True)
-        dil = st.radio(
-            label="",
-            options=["Azərbaycanca", "Русский", "English"],
-            horizontal=True,
-            label_visibility="collapsed"
-        )
+        st.markdown('<div class="section-title">📝 Dil</div>', unsafe_allow_html=True)
+        dil = st.radio("", ["Azərbaycanca", "Русский", "English"], horizontal=True, label_visibility="collapsed")
 
-    # İdmançı parametrləri yalnız müvafiq rejim seçildikdə dinamik açılır
     if "💪" in rejim:
-        st.markdown('<div class="section-title">💪 İdmançı parametrləri</div>', unsafe_allow_html=True)
-        col3, col4, col5 = st.columns(3)
-        with col3:
-            çəki = st.number_input("Çəki (kq)", min_value=40, max_value=200, value=75)
-        with col4:
-            hədəf = st.selectbox("Məqsəd", ["Kütlə artımı", "Yağ yandırma", "Güc saxlama", "Rəqabət hazırlığı"])
-        with col5:
-            idman_növü = st.selectbox("İdman növü", ["Fitnes/Gym", "Qaçış", "Üzgüçülük", "Futbol", "Digər"])
+        st.markdown('<div class="section-title">💪 İdmançı Parametrləri</div>', unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
+        çəki = c1.number_input("Çəki (kq)", 40, 200, 75)
+        hədəf = c2.selectbox("Məqsəd", ["Kütlə artımı", "Yağ yandırma", "Güc"])
 
-    submitted = st.form_submit_button("✨ Mükəmməl Resepti Hazırla")
+    submitted = st.form_submit_button("✨ Resepti və Şəkli Hazırla")
 
 # ====================================================================
-# 6. AI PROCESİNİN İCRA OLUNMASI
+# 5. AI GENERASİYA
 # ====================================================================
 if submitted:
     if not erzaqlar.strip():
-        st.warning("⚠️ Zəhmət olmasa əvvəlcə ərzaqları qeyd edin!")
+        st.warning("⚠️ Ərzaqları daxil edin!")
     else:
-        with st.spinner("🔮 Süni İntellekt reseptinizi və cədvəlinizi hesablayır..."):
-            if "💪" in rejim:
-                prompt = f"""
-Sən elit idman qidalanması mütəxəssisi və peşəkar aşpazsan.
-İdmançı məlumatları:
-- Çəki: {çəki} kq
-- Məqsəd: {hədəf}
-- İdman növü: {idman_növü}
-Mövcud ərzaqlar: {erzaqlar}
-Mətbəx istiqaməti: {metbex}
+        with st.spinner("👩‍🍳 Süni İntellekt aşpazınız hazırlayır..."):
+            
+            allergy_info = ", ".join(allergiyalar) + (f", {xususi_allergiya}" if xususi_allergiya else "")
+            
+            # Prompt mühəndisliyi
+            prompt = f"""
+            Sən peşəkar aşpazsan. 
+            Ərzaqlar: {erzaqlar}
+            Allergiyalar (BUNLARI QƏTİ İSTİFADƏ ETMƏ): {allergy_info}
+            Mətbəx: {metbex}
+            Rejim: {rejim}
+            Dil: {dil}
 
-Cavabı YALNIZ {dil} dilində ver. Aşağıdakı formatda detallı cavab hazırla:
-## 🍽️ Yeməyin Adı
-## ⏱️ Hazırlanma Vaxtı
-## 📊 KALORİ VƏ MAKRO CƏDVƏLİ
-| Ərzaq | Miqdar | Kalori | Protein | Karbohidrat | Yağ |
-**CƏMI: X kalori | Protein: Xq | Karbo: Xq | Yağ: Xq**
-## 🎯 İdmançı üçün uyğunluq analizi
-## 🥄 Addım-addım hazırlanma
-## 💡 İdmançı üçün əlavə məsləhətlər
-"""
-            else:
-                prompt = f"""
-Sən peşəkar aşpaz və qidalanma mütəxəssisisan.
-Mövcud ərzaqlar: {erzaqlar}
-Mətbəx istiqaməti: {metbex}
+            Tələblər:
+            1. Resepti {dil} dilində yaz.
+            2. Ən başda birinci sətirdə 'TITLE: [Yeməyin Adı]' formatında adını yaz.
+            3. Allergiyalara uyğun alternativlər təklif et.
+            4. İdmançı rejimindədirsə kalori hesabla.
+            """
 
-Cavabı YALNIZ {dil} dilində ver. Aşağıdakı formatda detallı cavab hazırla:
-## 🍽️ Yeməyin Adı
-## ⏱️ Hazırlanma Vaxtı
-## 📊 Kalori məlumatı
-**Cəmi: ~X kalori (1 porsiya)**
-## 🛒 Tam Ərzaq Siyahısı (miqdarlarla)
-## 🥄 Addım-addım hazırlanma
-## ✨ Servis etmə məsləhəti
-"""
             try:
                 response = model.generate_content(prompt)
-                st.session_state.ai_response = response.text
+                full_text = response.text
+                
+                # Başlığı ayırırıq (Şəkil generasityası üçün)
+                if "TITLE:" in full_text:
+                    title_part = full_text.split("TITLE:")[1].split("\n")[0].strip()
+                    st.session_state.recipe_title = title_part
+                
+                st.session_state.ai_response = full_text
             except Exception as e:
-                st.error(f"❌ Xəta baş verdi: {e}")
+                st.error(f"Xəta: {e}")
 
+# ====================================================================
+# 6. NƏTİCƏNİN GÖSTƏRİLMƏSİ
+# ====================================================================
 if st.session_state.ai_response:
+    # Şəkli göstər
+    if st.session_state.recipe_title:
+        img_url = get_image_url(st.session_state.recipe_title)
+        st.markdown(f'<img src="{img_url}" class="recipe-img" width="100%">', unsafe_allow_html=True)
+        st.caption(f"📸 Süni İntellekt tərəfindən generasiya olunmuş vizual: {st.session_state.recipe_title}")
+
+    # Allergik xəbərdarlıq
+    if allergiyalar or xususi_allergiya:
+        st.markdown(f'<div class="allergy-warning">ℹ️ Bu resept sizin <b>{allergy_info}</b> allergiyanız nəzərə alınaraq hazırlanmışdır.</div>', unsafe_allow_html=True)
+
+    # Resepti göstər
     st.markdown('<div class="result-box">', unsafe_allow_html=True)
-    st.markdown('<div class="result-header">🌟 Sizin üçün hazırlanan resept</div>', unsafe_allow_html=True)
-    st.markdown(st.session_state.ai_response)
+    st.markdown(st.session_state.ai_response.replace(f"TITLE: {st.session_state.recipe_title}", ""))
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.download_button(
-        label="📥 Resepti Mətn Faylı Kimi Yadda Saxla",
-        data=st.session_state.ai_response,
-        file_name="ai_resept_plani.txt",
-        mime="text/plain"
-    )
+    st.download_button("📥 Resepti Yadda Saxla", st.session_state.ai_response, "resept.txt")
 
-# ====================================================================
-# 7. FOOTER
-# ====================================================================
-st.markdown("""
-<div class="ornament-divider" style="margin-top:2.5rem">✦ ◈ ✦ ◈ ✦</div>
-<div class="footer">
-  🇦🇿 Azərbaycan mətbəxindən ilhamlanaraq hazırlanmışdır &nbsp;·&nbsp; AI ilə qidalanmanı kəşf et
-</div>
-""", unsafe_allow_html=True)
+# Footer
+st.markdown('<div class="footer">Azərbaycan mətbəxi & AI texnologiyası</div>', unsafe_allow_html=True)
