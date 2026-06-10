@@ -1,6 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 import urllib.parse
+from PIL import Image # YENİ: Şəkli oxumaq üçün əlavə olundu
 
 # ====================================================================
 # 1. AI MODELİNİN AYARLANMASI
@@ -120,6 +121,11 @@ with st.form("master_form"):
     st.markdown('<div class="section-title">🧂 Ərzaqlarınız</div>', unsafe_allow_html=True)
     erzaqlar = st.text_area("erzaq", placeholder="Məs: toyuq, qaymaq, göbələk...", height=100, label_visibility="collapsed")
 
+    # --- YENİ ƏLAVƏ: VEB KAMERA BÖLMƏSİ ---
+    st.markdown("**📷 Və ya ərzaqların şəklini çəkin (Əlavə seçim):**")
+    cekilen_sekil = st.camera_input("Kamera", label_visibility="collapsed")
+    # --------------------------------------
+
     # --- YENİ: ALLERGİYA BÖLMƏSİ ---
     st.markdown('<div class="section-title">⚠️ Allergiyalar və Məhdudiyyətlər</div>', unsafe_allow_html=True)
     allergiyalar = st.multiselect(
@@ -149,8 +155,9 @@ with st.form("master_form"):
 # 5. AI GENERASİYA
 # ====================================================================
 if submitted:
-    if not erzaqlar.strip():
-        st.warning("⚠️ Ərzaqları daxil edin!")
+    # Şərt yeniləndi: Əgər həm mətn boşdursa, həm də şəkil çəkilməyibsə xəbərdarlıq et.
+    if not erzaqlar.strip() and not cekilen_sekil:
+        st.warning("⚠️ Zəhmət olmasa, ərzaqları yazın və ya şəklini çəkin!")
     else:
         with st.spinner("👩‍🍳 Süni İntellekt aşpazınız hazırlayır..."):
             
@@ -173,7 +180,14 @@ if submitted:
             """
 
             try:
-                response = model.generate_content(prompt)
+                # --- YENİ: Əgər şəkil çəkilibsə, şəkli də AI-yə göndəririk ---
+                if cekilen_sekil:
+                    img = Image.open(cekilen_sekil)
+                    response = model.generate_content([prompt, img])
+                else:
+                    response = model.generate_content(prompt)
+                # -----------------------------------------------------------
+
                 full_text = response.text
                 
                 # Başlığı ayırırıq (Şəkil generasityası üçün)
