@@ -1,6 +1,5 @@
 import streamlit as st
 import google.generativeai as genai
-import os
 
 # ====================================================================
 # 1. AI MODELİNİN AYARLANMASI
@@ -37,8 +36,7 @@ st.markdown("""
 .stApp {
   background-color: var(--fon);
   background-image:
-    /* Milli şəbəkə/ornament SVG pattern */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23D4A017' stroke-width='0.6' opacity='0.25'%3E%3C!-- Mərkəzi səkkizguşəli ulduz --%3E%3Cpolygon points='40,8 47,20 60,20 52,30 56,43 40,36 24,43 28,30 20,20 33,20' /%3E%3C!-- Köşə bəzəkləri --%3E%3Ccircle cx='0' cy='0' r='8' /%3E%3Ccircle cx='80' cy='0' r='8' /%3E%3Ccircle cx='0' cy='80' r='8' /%3E%3Ccircle cx='80' cy='80' r='8' /%3E%3C!-- Kənar xətlər --%3E%3Crect x='2' y='2' width='76' height='76' rx='4' /%3E%3Cline x1='40' y1='2' x2='40' y2='78' /%3E%3Cline x1='2' y1='40' x2='78' y2='40' /%3E%3Cline x1='2' y1='2' x2='78' y2='78' /%3E%3Cline x1='78' y1='2' x2='2' y2='78' /%3E%3C/g%3E%3C/svg%3E");
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23D4A017' stroke-width='0.6' opacity='0.25'%3E%3Cpolygon points='40,8 47,20 60,20 52,30 56,43 40,36 24,43 28,30 20,20 33,20' /%3E%3Ccircle cx='0' cy='0' r='8' /%3E%3Ccircle cx='80' cy='0' r='8' /%3E%3Ccircle cx='0' cy='80' r='8' /%3E%3Ccircle cx='80' cy='80' r='8' /%3E%3Crect x='2' y='2' width='76' height='76' rx='4' /%3E%3Cline x1='40' y1='2' x2='40' y2='78' /%3E%3Cline x1='2' y1='40' x2='78' y2='40' /%3E%3Cline x1='2' y1='2' x2='78' y2='78' /%3E%3Cline x1='78' y1='2' x2='2' y2='78' /%3E%3C/g%3E%3C/svg%3E");
   background-size: 80px 80px;
   font-family: 'Inter', sans-serif;
 }
@@ -115,23 +113,6 @@ st.markdown("""
   border-bottom: 2px solid var(--krem);
   padding-bottom: 0.6rem;
 }
-
-/* ── BADGE — rejim ── */
-.badge-row {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  margin-top: 0.5rem;
-}
-.badge {
-  padding: 0.3rem 0.9rem;
-  border-radius: 50px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.badge-resept { background:#FEF3C7; color:#92400E; border:1.5px solid #F59E0B; }
-.badge-idmanci { background:#D1FAE5; color:#065F46; border:1.5px solid #10B981; }
 
 /* ── INPUT STİLLƏRİ ── */
 .stTextInput > div > div > input,
@@ -213,21 +194,6 @@ st.markdown("""
   gap: 0.5rem;
 }
 
-/* ── KALORİ PANEL ── */
-.calorie-bar {
-  background: linear-gradient(90deg, var(--yaşıl), #2ECC71);
-  border-radius: 12px;
-  padding: 1rem 1.5rem;
-  margin-bottom: 1rem;
-  color: white;
-  font-weight: 600;
-}
-
-/* ── XƏBƏRDARLIQ ── */
-.stWarning { border-radius: 10px !important; }
-.stSuccess { border-radius: 10px !important; }
-.stError   { border-radius: 10px !important; }
-
 /* ── FOOTER ── */
 .footer {
   text-align: center;
@@ -238,11 +204,14 @@ st.markdown("""
   border-top: 1px solid rgba(212,160,23,0.2);
 }
 
-/* Streamlit default padding azalt */
 .block-container { padding-top: 1.5rem !important; max-width: 780px !important; }
 div[data-testid="stVerticalBlock"] { gap: 0.5rem; }
 </style>
 """, unsafe_allow_html=True)
+
+# Session State tənzimlənməsi (Səhifə yenilənəndə resept itməsin deyə)
+if "ai_response" not in st.session_state:
+    st.session_state.ai_response = None
 
 # ====================================================================
 # 3. BAŞLIQ HERO
@@ -256,27 +225,26 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ====================================================================
-# 4. REJİM SEÇİMİ
+# 5. ƏRZAQ + PARAMETRLƏRİN VAHİD FORMU
 # ====================================================================
-st.markdown('<div class="card"><div class="card-title">⚙️ Rejim seçin</div>', unsafe_allow_html=True)
-rejim = st.radio(
-    label="",
-    options=["🍽️ Adi Resept", "💪 İdmançı Rejimi (Kalori + Makro)"],
-    horizontal=True,
-    label_visibility="collapsed"
-)
-st.markdown('</div>', unsafe_allow_html=True)
+with st.form("resept_formu_yeni"):
+    
+    # Rejim seçimi artıq formun içindədir - Beləcə tətbiq daha stabil işləyir
+    st.markdown('<div class="card"><div class="card-title">⚙️ Rejim seçin</div>', unsafe_allow_html=True)
+    rejim = st.radio(
+        label="",
+        options=["🍽️ Adi Resept", "💪 İdmançı Rejimi (Kalori + Makro)"],
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# ====================================================================
-# 5. ƏRZAQ + PARAMETRLƏR FORMU
-# ====================================================================
-with st.form("resept_formu"):
     st.markdown('<div class="card"><div class="card-title">🧂 Ərzaqlarınız</div>', unsafe_allow_html=True)
     erzaqlar = st.text_area(
         label="Evdə hansı ərzaqlar var?",
         placeholder="Məsələn: 200q toyuq döşü, 2 yumurta, kartof, soğan, pomidor, zeytun yağı...\n\nİdmançı rejimində qram yazmağınız tövsiyə olunur.",
         height=110,
-        label_visibility="visible"
+        label_visibility="collapsed"
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -307,113 +275,83 @@ with st.form("resept_formu"):
         )
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # İdmançı rejimi üçün əlavə parametrlər
-    if "💪" in rejim:
-        st.markdown('<div class="card"><div class="card-title">💪 İdmançı parametrləri</div>', unsafe_allow_html=True)
-        col3, col4, col5 = st.columns(3)
-        with col3:
-            çəki = st.number_input("Çəki (kq)", min_value=40, max_value=200, value=75)
-        with col4:
-            hədəf = st.selectbox("Məqsəd", ["Kütlə artım", "Yağ yandırma", "Güc saxlama", "Rəqabət hazırlığı"])
-        with col5:
-            idman_növü = st.selectbox("İdman növü", ["Fitnes/Gym", "Qaçış", "Üzgüçülük", "Futbol", "Digər"])
-        st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        çəki = hədəf = idman_növü = None
+    # İdmançı parametrləri blokunun idarəsi
+    st.markdown('<div class="card"><div class="card-title">💪 İdmançı parametrləri (Yalnız idmançı rejimi seçildikdə aktiv olur)</div>', unsafe_allow_html=True)
+    col3, col4, col5 = st.columns(3)
+    with col3:
+        çəki = st.number_input("Çəki (kq)", min_value=40, max_value=200, value=75)
+    with col4:
+        hədəf = st.selectbox("Məqsəd", ["Kütlə artımı", "Yağ yandırma", "Güc saxlama", "Rəqabət hazırlığı"])
+    with col5:
+        idman_növü = st.selectbox("İdman növü", ["Fitnes/Gym", "Qaçış", "Üzgüçülük", "Futbol", "Digər"])
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    submitted = st.form_submit_button("✨ Resept Hazırla")
+    submitted = st.form_submit_button("✨ Mükəmməl Resepti Hazırla")
 
 # ====================================================================
-# 6. AI CAVABI
+# 6. AI PROCESİNİN İCRA OLUNMASI
 # ====================================================================
 if submitted:
     if not erzaqlar.strip():
         st.warning("⚠️ Zəhmət olmasa əvvəlcə ərzaqları qeyd edin!")
     else:
-        with st.spinner("🔮 AI reseptinizi hazırlayır..."):
-
-            # PROMPT QURULMASI
+        with st.spinner("🔮 Süni İntellekt reseptinizi və cədvəlinizi hesablayır..."):
+            
             if "💪" in rejim:
                 prompt = f"""
 Sən elit idman qidalanması mütəxəssisi və peşəkar aşpazsan.
-
 İdmançı məlumatları:
 - Çəki: {çəki} kq
 - Məqsəd: {hədəf}
 - İdman növü: {idman_növü}
-
 Mövcud ərzaqlar: {erzaqlar}
 Mətbəx istiqaməti: {metbex}
 
 Cavabı YALNIZ {dil} dilində ver. Aşağıdakı formatda detallı cavab hazırla:
-
 ## 🍽️ Yeməyin Adı
-[ad]
-
 ## ⏱️ Hazırlanma Vaxtı
-[dəqiqə]
-
 ## 📊 KALORİ VƏ MAKRO CƏDVƏLİ
-Hər maddə üçün ayrıca:
 | Ərzaq | Miqdar | Kalori | Protein | Karbohidrat | Yağ |
-|-------|--------|--------|---------|-------------|-----|
-[cədvəl]
-
 **CƏMI: X kalori | Protein: Xq | Karbo: Xq | Yağ: Xq**
-
 ## 🎯 İdmançı üçün uyğunluq analizi
-- Bu məqsədə ({hədəf}) nə qədər uyğundur?
-- Protein hədəfi: {çəki}kq × 1.8-2.2q = {round(çəki*2,0)}-{round(çəki*2.2,0)}q/gün — bu yeməkdən alınan hissə
-- Tövsiyə olunan qəbul vaxtı (məşqdən əvvəl/sonra?)
-
 ## 🥄 Addım-addım hazırlanma
-[nömrəli addımlar]
-
 ## 💡 İdmançı üçün əlavə məsləhətlər
-[2-3 praktik məsləhət]
 """
             else:
                 prompt = f"""
 Sən peşəkar aşpaz və qidalanma mütəxəssisisan.
-
 Mövcud ərzaqlar: {erzaqlar}
 Mətbəx istiqaməti: {metbex}
 
 Cavabı YALNIZ {dil} dilində ver. Aşağıdakı formatda detallı cavab hazırla:
-
 ## 🍽️ Yeməyin Adı
-[ad]
-
 ## ⏱️ Hazırlanma Vaxtı
-[dəqiqə]
-
 ## 📊 Kalori məlumatı
-Hər maddə üçün:
-| Ərzaq | Miqdar | Kalori |
-|-------|--------|--------|
-[cədvəl]
 **Cəmi: ~X kalori (1 porsiya)**
-
 ## 🛒 Tam Ərzaq Siyahısı (miqdarlarla)
-[siyahı]
-
 ## 🥄 Addım-addım hazırlanma
-[nömrəli addımlar]
-
 ## ✨ Servis etmə məsləhəti
-[1-2 cümlə]
 """
-
             try:
                 response = model.generate_content(prompt)
-
-                st.markdown('<div class="result-box">', unsafe_allow_html=True)
-                st.markdown('<div class="result-header">🌟 Sizin üçün hazırlanan resept</div>', unsafe_allow_html=True)
-                st.markdown(response.text)
-                st.markdown('</div>', unsafe_allow_html=True)
-
+                st.session_state.ai_response = response.text
             except Exception as e:
                 st.error(f"❌ Xəta baş verdi: {e}")
+
+# Nəticəni ekranda göstərmək və yükləmə funksiyası
+if st.session_state.ai_response:
+    st.markdown('<div class="result-box">', unsafe_allow_html=True)
+    st.markdown('<div class="result-header">🌟 Sizin üçün hazırlanan resept</div>', unsafe_allow_html=True)
+    st.markdown(st.session_state.ai_response)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Praktik funksiya: Resepti telefona və ya kompüterə yükləmə düyməsi
+    st.download_button(
+        label="📥 Resepti Mətn Faylı Kimi Yadda Saxla",
+        data=st.session_state.ai_response,
+        file_name="ai_resept_plani.txt",
+        mime="text/plain"
+    )
 
 # ====================================================================
 # 7. FOOTER
