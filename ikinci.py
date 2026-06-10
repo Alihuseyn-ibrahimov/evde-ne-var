@@ -21,7 +21,7 @@ model = genai.GenerativeModel('gemini-2.5-flash')
 st.set_page_config(page_title="Evdə Nə Var? - AI Resept Botu", page_icon="🍳", layout="centered")
 
 # Kreativ Başlıq və Dizayn
-st.title("🍳 Evdə Nə Var? — Əlihüseynin süni zəkası ilə öyrən")
+st.title("🍳 Evdə Nə Var? — Əlihüseynin süni intellekti ilə öyrən")
 st.write("Əlinizdə olan qidaları qeyd edin, Süni İntellekt sizə dünya mətbəxlərindən unikal reseptlər hazırlasın!")
 
 # İstifadəçidən giriş məlumatlarının alınması
