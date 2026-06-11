@@ -2,6 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 import urllib.parse
 import re
+import requests  # YENİ: Unsplash-dan ildırım sürətilə şəkil çəkmək üçün
 from PIL import Image
 
 # ====================================================================
@@ -74,7 +75,7 @@ div[data-testid="stForm"] {
   border-radius: 16px;
 }
 
-/* YENİLƏNDİ: st.image üçün dizayn (Qızılı Çərçivə) */
+/* st.image üçün dizayn (Qızılı Çərçivə) */
 div[data-testid="stImage"] img {
     border-radius: 15px !important;
     border: 3px solid var(--qizil) !important;
@@ -96,7 +97,7 @@ div[data-testid="stImage"] img {
 
 
 # ====================================================================
-# 3. KÖMƏKÇİ FUNKSİYALAR
+# 3. KÖMƏKÇİ FUNKSİYALAR (YENİLƏNDİ)
 # ====================================================================
 
 def herfleri_temizle(metn):
@@ -117,15 +118,32 @@ def herfleri_temizle(metn):
     return metn
 
 def get_image_url(food_name_eng):
-    """Yeməyin adına uyğun olaraq Pollinations.ai vasitəsilə şəkil URL-i yaradır"""
+    """Yeməyin adına uyğun olaraq Unsplash API-dən ildırım sürətilə real şəkil tapır"""
     tehlukesiz_ad = herfleri_temizle(food_name_eng)
     
     if not tehlukesiz_ad:
-        tehlukesiz_ad = "delicious meal"
+        tehlukesiz_ad = "delicious food"
         
-    encoded_name = urllib.parse.quote(
-        f"professional food photography of {tehlukesiz_ad}, high resolution, 4k, delicious, plated beautifully")
-    return f"https://image.pollinations.ai/prompt/{encoded_name}?width=1024&height=1024&nologo=true"
+    # Standart zəmanət şəkli (Heç nə tapılmasa və ya internet kəsilsə bu açılacaq)
+    default_image = "https://images.unsplash.com/photo-1495147466023-e6a92040d64a?auto=format&fit=crop&w=1024&q=80"
+        
+    try:
+        # Streamlit Secrets-dən Unsplash açarını oxuyuruq
+        UNSPLASH_API_KEY = st.secrets["UNSPLASH_API_KEY"]
+        
+        url = f"https://api.unsplash.com/search/photos?page=1&query={urllib.parse.quote(tehlukesiz_ad + ' food')}&client_id={UNSPLASH_API_KEY}&per_page=1&orientation=landscape"
+        
+        response = requests.get(url, timeout=3) # Maksimum 3 saniyə gözləyir
+        data = response.json()
+        
+        if data.get('results') and len(data['results']) > 0:
+            return data['results'][0]['urls']['regular']
+            
+    except Exception as e:
+        # API açarı səhvdirsə və ya yüklənmədisə, qorunma bloku işə düşür
+        pass
+
+    return default_image
 
 
 # Session State
@@ -249,15 +267,11 @@ if st.session_state.ai_response:
     if st.session_state.user_image:
         st.image(st.session_state.user_image, caption="📸 Sizin təqdim etdiyiniz ərzaqlar")
     
-    # --- YENİ VƏ QƏTİ HƏLL: st.image İSTİFADƏSİ ---
+    # --- YENİ: UNSPLASH İLƏ İLDIRIM SÜRƏTLİ ŞƏKİL ---
     if st.session_state.recipe_title_eng:
         img_url = get_image_url(st.session_state.recipe_title_eng)
         
-        # HTML əvəzinə Streamlit-in təbii şəkil yükləyicisi istifadə olunur (səbirlə yüklənməni gözləyir)
-        st.image(img_url, caption=f"📸 Süni İntellekt tərəfindən generasiya olunmuş vizual: {st.session_state.recipe_title}")
-        
-        # Ehtiyat plan: Əgər yenə də problem olarsa birbaşa link
-        st.markdown(f"*[Şəkil açılmırsa, tam ölçüdə baxmaq üçün buraya klikləyin]({img_url})*")
+        st.image(img_url, caption=f"📸 Unsplash bazasından tapılmış real vizual: {st.session_state.recipe_title}")
     # -----------------------------------------------
 
     # Allergik xəbərdarlıq
