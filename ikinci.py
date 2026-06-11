@@ -1,7 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 import urllib.parse
-from PIL import Image # YENİ: Şəkli oxumaq üçün əlavə olundu
+from PIL import Image
 
 # ====================================================================
 # 1. AI MODELİNİN AYARLANMASI
@@ -9,7 +9,6 @@ from PIL import Image # YENİ: Şəkli oxumaq üçün əlavə olundu
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# Modeli yenidən sizin ilkin versiyaya qaytarırıq:
 model = genai.GenerativeModel('gemini-2.5-flash')
 
 # ====================================================================
@@ -93,19 +92,25 @@ div[data-testid="stForm"] {
 </style>
 """, unsafe_allow_html=True)
 
+
 # ====================================================================
 # 3. KÖMƏKÇİ FUNKSİYALAR
 # ====================================================================
 def get_image_url(food_name):
     """Yemək adına uyğun olaraq Pollinations.ai vasitəsilə şəkil URL-i yaradır"""
-    encoded_name = urllib.parse.quote(f"professional food photography of {food_name}, high resolution, 4k, delicious, plated beautifully")
+    encoded_name = urllib.parse.quote(
+        f"professional food photography of {food_name}, high resolution, 4k, delicious, plated beautifully")
     return f"https://pollinations.ai/p/{encoded_name}?width=1024&height=1024&nologo=true"
+
 
 # Session State
 if "ai_response" not in st.session_state:
     st.session_state.ai_response = None
 if "recipe_title" not in st.session_state:
     st.session_state.recipe_title = None
+# --- YENİ: İstifadəçinin çəkdiyi şəkli yadda saxlamaq üçün ---
+if "user_image" not in st.session_state:
+    st.session_state.user_image = None
 
 # Hero
 st.markdown('<div class="hero-block"><div class="hero-title">🍳 Evdə Nə Var?</div></div>', unsafe_allow_html=True)
@@ -119,14 +124,12 @@ rejim = st.radio("", ["🍽️ Adi Resept", "💪 İdmançı Rejimi"], horizonta
 # ====================================================================
 with st.form("master_form"):
     st.markdown('<div class="section-title">🧂 Ərzaqlarınız</div>', unsafe_allow_html=True)
-    erzaqlar = st.text_area("erzaq", placeholder="Məs: toyuq, qaymaq, göbələk...", height=100, label_visibility="collapsed")
+    erzaqlar = st.text_area("erzaq", placeholder="Məs: toyuq, qaymaq, göbələk...", height=100,
+                            label_visibility="collapsed")
 
-    # --- YENİ ƏLAVƏ: VEB KAMERA BÖLMƏSİ (Dəyişdirildi) ---
     with st.expander("📷 Ərzaqınızın şəklini yükləyin"):
         cekilen_sekil = st.camera_input("Kamera", label_visibility="collapsed")
-    # -----------------------------------------------------
 
-    # --- YENİ: ALLERGİYA BÖLMƏSİ ---
     st.markdown('<div class="section-title">⚠️ Allergiyalar və Məhdudiyyətlər</div>', unsafe_allow_html=True)
     allergiyalar = st.multiselect(
         "Allergiyanız varmı?",
@@ -155,15 +158,17 @@ with st.form("master_form"):
 # 5. AI GENERASİYA
 # ====================================================================
 if submitted:
-    # Şərt yeniləndi: Əgər həm mətn boşdursa, həm də şəkil çəkilməyibsə xəbərdarlıq et.
     if not erzaqlar.strip() and not cekilen_sekil:
         st.warning("⚠️ Zəhmət olmasa, ərzaqları yazın və ya şəklini çəkin!")
     else:
+        # Şəkli yadda saxlayırıq ki, aşağıda göstərə bilək
+        st.session_state.user_image = cekilen_sekil
+        
         with st.spinner("👩‍🍳 Süni İntellekt aşpazınız hazırlayır..."):
-            
+
             allergy_info = ", ".join(allergiyalar) + (f", {xususi_allergiya}" if xususi_allergiya else "")
-            
-            # Prompt mühəndisliyi
+
+            # Prompt mühəndisliyi daha da gücləndirildi ki, TITLE xətası olmasın
             prompt = f"""
             Sən peşəkar aşpazsan. 
             Ərzaqlar: {erzaqlar}
@@ -174,27 +179,25 @@ if submitted:
 
             Tələblər:
             1. Resepti {dil} dilində yaz.
-            2. Ən başda birinci sətirdə 'TITLE: [Yeməyin Adı]' formatında adını yaz.
+            2. MÜTLƏQ birinci sətirdə məhz bu formatda adı yaz: TITLE: [Yeməyin Adı]
             3. Allergiyalara uyğun alternativlər təklif et.
             4. İdmançı rejimindədirsə kalori hesabla.
             """
 
             try:
-                # --- YENİ: Əgər şəkil çəkilibsə, şəkli də AI-yə göndəririk ---
                 if cekilen_sekil:
                     img = Image.open(cekilen_sekil)
                     response = model.generate_content([prompt, img])
                 else:
                     response = model.generate_content(prompt)
-                # -----------------------------------------------------------
 
                 full_text = response.text
-                
-                # Başlığı ayırırıq (Şəkil generasityası üçün)
+
+                # Başlığı ayırırıq
                 if "TITLE:" in full_text:
                     title_part = full_text.split("TITLE:")[1].split("\n")[0].strip()
                     st.session_state.recipe_title = title_part
-                
+
                 st.session_state.ai_response = full_text
             except Exception as e:
                 st.error(f"Xəta: {e}")
@@ -203,7 +206,14 @@ if submitted:
 # 6. NƏTİCƏNİN GÖSTƏRİLMƏSİ
 # ====================================================================
 if st.session_state.ai_response:
-    # Şəkli göstər
+    st.markdown("---")
+    
+    # --- YENİ: İstifadəçinin çəkdiyi şəkli göstər ---
+    if st.session_state.user_image:
+        st.image(st.session_state.user_image, caption="📸 Sizin təqdim etdiyiniz ərzaqlar")
+    # ------------------------------------------------
+    
+    # Süni İntellektin yaratdığı hazır yeməyin şəkli
     if st.session_state.recipe_title:
         img_url = get_image_url(st.session_state.recipe_title)
         st.markdown(f'<img src="{img_url}" class="recipe-img" width="100%">', unsafe_allow_html=True)
@@ -211,7 +221,10 @@ if st.session_state.ai_response:
 
     # Allergik xəbərdarlıq
     if allergiyalar or xususi_allergiya:
-        st.markdown(f'<div class="allergy-warning">ℹ️ Bu resept sizin <b>{allergy_info}</b> allergiyanız nəzərə alınaraq hazırlanmışdır.</div>', unsafe_allow_html=True)
+        allergy_info = ", ".join(allergiyalar) + (f", {xususi_allergiya}" if xususi_allergiya else "")
+        st.markdown(
+            f'<div class="allergy-warning">ℹ️ Bu resept sizin <b>{allergy_info}</b> allergiyanız nəzərə alınaraq hazırlanmışdır.</div>',
+            unsafe_allow_html=True)
 
     # Resepti göstər
     st.markdown('<div class="result-box">', unsafe_allow_html=True)
