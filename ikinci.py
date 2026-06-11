@@ -94,13 +94,27 @@ div[data-testid="stForm"] {
 
 
 # ====================================================================
-# 3. KÖMƏKÇİ FUNKSİYALAR
+# 3. KÖMƏKÇİ FUNKSİYALAR (YENİLƏNDİ)
 # ====================================================================
-def get_image_url(food_name):
-    """Yemək adına uyğun olaraq Pollinations.ai vasitəsilə şəkil URL-i yaradır"""
+
+def herfleri_temizle(metn):
+    """ZİREH: Azərbaycan hərflərini ingilis hərflərinə çevirir ki, URL heç vaxt çökməsin"""
+    if not metn:
+        return ""
+    deyismeler = {
+        'ə': 'e', 'Ə': 'E', 'ı': 'i', 'İ': 'I', 'ö': 'o', 'Ö': 'O',
+        'ğ': 'g', 'Ğ': 'G', 'ü': 'u', 'Ü': 'U', 'ş': 's', 'Ş': 'S', 'ç': 'c', 'Ç': 'C'
+    }
+    for az_herf, en_herf in deyismeler.items():
+        metn = metn.replace(az_herf, en_herf)
+    return metn
+
+def get_image_url(food_name_eng):
+    """Yeməyin adına uyğun olaraq Pollinations.ai vasitəsilə şəkil URL-i yaradır"""
+    # AI yenə inad edib azərbaycanca yazsa belə, hərfləri təmizləyirik:
+    tehlukesiz_ad = herfleri_temizle(food_name_eng)
     encoded_name = urllib.parse.quote(
-        f"professional food photography of {food_name}, high resolution, 4k, delicious, plated beautifully")
-    # YENİLƏNİB: API bağlantısı daha stabil olan 'image.pollinations.ai/prompt/' ilə əvəz edildi
+        f"professional food photography of {tehlukesiz_ad}, high resolution, 4k, delicious, plated beautifully")
     return f"https://image.pollinations.ai/prompt/{encoded_name}?width=1024&height=1024&nologo=true"
 
 
@@ -109,6 +123,8 @@ if "ai_response" not in st.session_state:
     st.session_state.ai_response = None
 if "recipe_title" not in st.session_state:
     st.session_state.recipe_title = None
+if "recipe_title_eng" not in st.session_state: 
+    st.session_state.recipe_title_eng = None
 if "user_image" not in st.session_state:
     st.session_state.user_image = None
 
@@ -167,6 +183,7 @@ if submitted:
 
             allergy_info = ", ".join(allergiyalar) + (f", {xususi_allergiya}" if xususi_allergiya else "")
 
+            # PROMPT ÇOX SƏRT OLDU
             prompt = f"""
             Sən peşəkar aşpazsan. 
             Ərzaqlar: {erzaqlar}
@@ -177,7 +194,10 @@ if submitted:
 
             Tələblər:
             1. Resepti {dil} dilində yaz.
-            2. MÜTLƏQ birinci sətirdə məhz bu formatda adı yaz: TITLE: [Yeməyin Adı]
+            2. ƏN BAŞDA BİRİNCİ SƏTİRDƏ MÜTLƏQ BU FORMATDA AD YAZ: 
+               TITLE: [Yerli dildə ad] | [İngiliscə tərcüməsi]
+               NÜMUNƏ: TITLE: Quzu və Toyuq Qovurması | Lamb and Chicken Stew
+               DİQQƏT: "|" işarəsini və İngiliscə tərcüməni YADDAN ÇIXARMA!
             3. Allergiyalara uyğun alternativlər təklif et.
             4. İdmançı rejimindədirsə kalori hesabla.
             """
@@ -192,8 +212,14 @@ if submitted:
                 full_text = response.text
 
                 if "TITLE:" in full_text:
-                    title_part = full_text.split("TITLE:")[1].split("\n")[0].strip()
-                    st.session_state.recipe_title = title_part
+                    title_line = full_text.split("TITLE:")[1].split("\n")[0].strip()
+                    if "|" in title_line:
+                        parts = title_line.split("|", 1)
+                        st.session_state.recipe_title = parts[0].strip()
+                        st.session_state.recipe_title_eng = parts[1].strip()
+                    else:
+                        st.session_state.recipe_title = title_line.strip()
+                        st.session_state.recipe_title_eng = title_line.strip()
 
                 st.session_state.ai_response = full_text
             except Exception as e:
@@ -208,9 +234,9 @@ if st.session_state.ai_response:
     if st.session_state.user_image:
         st.image(st.session_state.user_image, caption="📸 Sizin təqdim etdiyiniz ərzaqlar")
     
-    # Süni İntellektin yaratdığı hazır yeməyin şəkli
-    if st.session_state.recipe_title:
-        img_url = get_image_url(st.session_state.recipe_title)
+    # Süni İntellektin yaratdığı hazır yeməyin şəkli 
+    if st.session_state.recipe_title_eng:
+        img_url = get_image_url(st.session_state.recipe_title_eng)
         st.markdown(f'<img src="{img_url}" class="recipe-img" width="100%">', unsafe_allow_html=True)
         st.caption(f"📸 Süni İntellekt tərəfindən generasiya olunmuş vizual: {st.session_state.recipe_title}")
 
@@ -223,7 +249,14 @@ if st.session_state.ai_response:
 
     # Resepti göstər
     st.markdown('<div class="result-box">', unsafe_allow_html=True)
-    st.markdown(st.session_state.ai_response.replace(f"TITLE: {st.session_state.recipe_title}", ""))
+    
+    # Ekrana çap edərkən qoşa TITLE sətrini mətnin içindən təmizləyirik
+    text_to_show = st.session_state.ai_response
+    if "TITLE:" in text_to_show:
+        title_line_full = text_to_show.split("TITLE:")[1].split("\n")[0]
+        text_to_show = text_to_show.replace(f"TITLE: {title_line_full}", "").replace(f"TITLE:{title_line_full}", "").strip()
+        
+    st.markdown(text_to_show)
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.download_button("📥 Resepti Yadda Saxla", st.session_state.ai_response, "resept.txt")
