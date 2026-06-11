@@ -1,6 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 import urllib.parse
+import re
 from PIL import Image
 
 # ====================================================================
@@ -73,10 +74,11 @@ div[data-testid="stForm"] {
   border-radius: 16px;
 }
 
-.recipe-img {
-    border-radius: 15px;
-    border: 3px solid var(--qizil);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+/* YENİLƏNDİ: st.image üçün dizayn (Qızılı Çərçivə) */
+div[data-testid="stImage"] img {
+    border-radius: 15px !important;
+    border: 3px solid var(--qizil) !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
     margin-bottom: 20px;
 }
 
@@ -94,25 +96,33 @@ div[data-testid="stForm"] {
 
 
 # ====================================================================
-# 3. KÖMƏKÇİ FUNKSİYALAR (YENİLƏNDİ)
+# 3. KÖMƏKÇİ FUNKSİYALAR
 # ====================================================================
 
 def herfleri_temizle(metn):
-    """ZİREH: Azərbaycan hərflərini ingilis hərflərinə çevirir ki, URL heç vaxt çökməsin"""
+    """ZİREH: Bütün xüsusi simvolları və yad hərfləri silir."""
     if not metn:
         return ""
+    
     deyismeler = {
         'ə': 'e', 'Ə': 'E', 'ı': 'i', 'İ': 'I', 'ö': 'o', 'Ö': 'O',
         'ğ': 'g', 'Ğ': 'G', 'ü': 'u', 'Ü': 'U', 'ş': 's', 'Ş': 'S', 'ç': 'c', 'Ç': 'C'
     }
     for az_herf, en_herf in deyismeler.items():
         metn = metn.replace(az_herf, en_herf)
+        
+    metn = re.sub(r'[^a-zA-Z0-9\s]', '', metn)
+    metn = re.sub(r'\s+', ' ', metn).strip()
+    
     return metn
 
 def get_image_url(food_name_eng):
     """Yeməyin adına uyğun olaraq Pollinations.ai vasitəsilə şəkil URL-i yaradır"""
-    # AI yenə inad edib azərbaycanca yazsa belə, hərfləri təmizləyirik:
     tehlukesiz_ad = herfleri_temizle(food_name_eng)
+    
+    if not tehlukesiz_ad:
+        tehlukesiz_ad = "delicious meal"
+        
     encoded_name = urllib.parse.quote(
         f"professional food photography of {tehlukesiz_ad}, high resolution, 4k, delicious, plated beautifully")
     return f"https://image.pollinations.ai/prompt/{encoded_name}?width=1024&height=1024&nologo=true"
@@ -183,7 +193,6 @@ if submitted:
 
             allergy_info = ", ".join(allergiyalar) + (f", {xususi_allergiya}" if xususi_allergiya else "")
 
-            # PROMPT ÇOX SƏRT OLDU
             prompt = f"""
             Sən peşəkar aşpazsan. 
             Ərzaqlar: {erzaqlar}
@@ -196,7 +205,7 @@ if submitted:
             1. Resepti {dil} dilində yaz.
             2. ƏN BAŞDA BİRİNCİ SƏTİRDƏ MÜTLƏQ BU FORMATDA AD YAZ: 
                TITLE: [Yerli dildə ad] | [İngiliscə tərcüməsi]
-               NÜMUNƏ: TITLE: Quzu və Toyuq Qovurması | Lamb and Chicken Stew
+               NÜMUNƏ: TITLE: Quzu Qovurması | Lamb Stew
                DİQQƏT: "|" işarəsini və İngiliscə tərcüməni YADDAN ÇIXARMA!
             3. Allergiyalara uyğun alternativlər təklif et.
             4. İdmançı rejimindədirsə kalori hesabla.
@@ -211,8 +220,11 @@ if submitted:
 
                 full_text = response.text
 
-                if "TITLE:" in full_text:
-                    title_line = full_text.split("TITLE:")[1].split("\n")[0].strip()
+                # Markdown ulduzlarını təmizləyirik
+                clean_text = full_text.replace("**", "")
+                
+                if "TITLE:" in clean_text:
+                    title_line = clean_text.split("TITLE:")[1].split("\n")[0].strip()
                     if "|" in title_line:
                         parts = title_line.split("|", 1)
                         st.session_state.recipe_title = parts[0].strip()
@@ -220,6 +232,9 @@ if submitted:
                     else:
                         st.session_state.recipe_title = title_line.strip()
                         st.session_state.recipe_title_eng = title_line.strip()
+                else:
+                    st.session_state.recipe_title = "Ləziz Yemək"
+                    st.session_state.recipe_title_eng = "Delicious Meal"
 
                 st.session_state.ai_response = full_text
             except Exception as e:
@@ -234,11 +249,16 @@ if st.session_state.ai_response:
     if st.session_state.user_image:
         st.image(st.session_state.user_image, caption="📸 Sizin təqdim etdiyiniz ərzaqlar")
     
-    # Süni İntellektin yaratdığı hazır yeməyin şəkli 
+    # --- YENİ VƏ QƏTİ HƏLL: st.image İSTİFADƏSİ ---
     if st.session_state.recipe_title_eng:
         img_url = get_image_url(st.session_state.recipe_title_eng)
-        st.markdown(f'<img src="{img_url}" class="recipe-img" width="100%">', unsafe_allow_html=True)
-        st.caption(f"📸 Süni İntellekt tərəfindən generasiya olunmuş vizual: {st.session_state.recipe_title}")
+        
+        # HTML əvəzinə Streamlit-in təbii şəkil yükləyicisi istifadə olunur (səbirlə yüklənməni gözləyir)
+        st.image(img_url, caption=f"📸 Süni İntellekt tərəfindən generasiya olunmuş vizual: {st.session_state.recipe_title}")
+        
+        # Ehtiyat plan: Əgər yenə də problem olarsa birbaşa link
+        st.markdown(f"*[Şəkil açılmırsa, tam ölçüdə baxmaq üçün buraya klikləyin]({img_url})*")
+    # -----------------------------------------------
 
     # Allergik xəbərdarlıq
     if allergiyalar or xususi_allergiya:
@@ -250,11 +270,8 @@ if st.session_state.ai_response:
     # Resepti göstər
     st.markdown('<div class="result-box">', unsafe_allow_html=True)
     
-    # Ekrana çap edərkən qoşa TITLE sətrini mətnin içindən təmizləyirik
     text_to_show = st.session_state.ai_response
-    if "TITLE:" in text_to_show:
-        title_line_full = text_to_show.split("TITLE:")[1].split("\n")[0]
-        text_to_show = text_to_show.replace(f"TITLE: {title_line_full}", "").replace(f"TITLE:{title_line_full}", "").strip()
+    text_to_show = re.sub(r'.*TITLE:.*\n?', '', text_to_show).strip()
         
     st.markdown(text_to_show)
     st.markdown('</div>', unsafe_allow_html=True)
