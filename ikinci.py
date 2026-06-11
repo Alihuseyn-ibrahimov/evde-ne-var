@@ -100,7 +100,8 @@ def get_image_url(food_name):
     """Yemək adına uyğun olaraq Pollinations.ai vasitəsilə şəkil URL-i yaradır"""
     encoded_name = urllib.parse.quote(
         f"professional food photography of {food_name}, high resolution, 4k, delicious, plated beautifully")
-    return f"https://pollinations.ai/p/{encoded_name}?width=1024&height=1024&nologo=true"
+    # YENİLƏNİB: API bağlantısı daha stabil olan 'image.pollinations.ai/prompt/' ilə əvəz edildi
+    return f"https://image.pollinations.ai/prompt/{encoded_name}?width=1024&height=1024&nologo=true"
 
 
 # Session State
@@ -108,7 +109,6 @@ if "ai_response" not in st.session_state:
     st.session_state.ai_response = None
 if "recipe_title" not in st.session_state:
     st.session_state.recipe_title = None
-# --- YENİ: İstifadəçinin çəkdiyi şəkli yadda saxlamaq üçün ---
 if "user_image" not in st.session_state:
     st.session_state.user_image = None
 
@@ -161,14 +161,12 @@ if submitted:
     if not erzaqlar.strip() and not cekilen_sekil:
         st.warning("⚠️ Zəhmət olmasa, ərzaqları yazın və ya şəklini çəkin!")
     else:
-        # Şəkli yadda saxlayırıq ki, aşağıda göstərə bilək
         st.session_state.user_image = cekilen_sekil
         
         with st.spinner("👩‍🍳 Süni İntellekt aşpazınız hazırlayır..."):
 
             allergy_info = ", ".join(allergiyalar) + (f", {xususi_allergiya}" if xususi_allergiya else "")
 
-            # Prompt mühəndisliyi daha da gücləndirildi ki, TITLE xətası olmasın
             prompt = f"""
             Sən peşəkar aşpazsan. 
             Ərzaqlar: {erzaqlar}
@@ -193,7 +191,6 @@ if submitted:
 
                 full_text = response.text
 
-                # Başlığı ayırırıq
                 if "TITLE:" in full_text:
                     title_part = full_text.split("TITLE:")[1].split("\n")[0].strip()
                     st.session_state.recipe_title = title_part
@@ -208,10 +205,8 @@ if submitted:
 if st.session_state.ai_response:
     st.markdown("---")
     
-    # --- YENİ: İstifadəçinin çəkdiyi şəkli göstər ---
     if st.session_state.user_image:
         st.image(st.session_state.user_image, caption="📸 Sizin təqdim etdiyiniz ərzaqlar")
-    # ------------------------------------------------
     
     # Süni İntellektin yaratdığı hazır yeməyin şəkli
     if st.session_state.recipe_title:
