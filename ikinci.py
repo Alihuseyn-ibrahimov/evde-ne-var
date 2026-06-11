@@ -121,10 +121,10 @@ with st.form("master_form"):
     st.markdown('<div class="section-title">🧂 Ərzaqlarınız</div>', unsafe_allow_html=True)
     erzaqlar = st.text_area("erzaq", placeholder="Məs: toyuq, qaymaq, göbələk...", height=100, label_visibility="collapsed")
 
-    # --- YENİ ƏLAVƏ: VEB KAMERA BÖLMƏSİ ---
-    st.markdown("**📷 Və ya ərzaqların şəklini çəkin (Əlavə seçim):**")
-    cekilen_sekil = st.camera_input("Kamera", label_visibility="collapsed")
-    # --------------------------------------
+    # --- YENİ ƏLAVƏ: VEB KAMERA BÖLMƏSİ (Dəyişdirildi) ---
+    with st.expander("📷 Ərzaqınızın şəklini yükləyin"):
+        cekilen_sekil = st.camera_input("Kamera", label_visibility="collapsed")
+    # -----------------------------------------------------
 
     # --- YENİ: ALLERGİYA BÖLMƏSİ ---
     st.markdown('<div class="section-title">⚠️ Allergiyalar və Məhdudiyyətlər</div>', unsafe_allow_html=True)
