@@ -19,7 +19,7 @@ model = genai.GenerativeModel('gemini-2.5-flash')
 st.set_page_config(
     page_title="Evdə Nə Var? — AI Resept Botu",
     page_icon="🍳",
-    layout="wide" # Ekranı genişləndirdik ki, şəkil və video yan-yana qəşəng yerləşsin
+    layout="wide" 
 )
 
 st.markdown("""
@@ -205,7 +205,7 @@ with st.form("master_form"):
     submitted = st.form_submit_button("✨ Resepti və Şəkli Hazırla")
 
 # ====================================================================
-# 5. AI GENERASİYA (Əksik olan bloklar bərpa edildi!)
+# 5. AI GENERASİYA
 # ====================================================================
 if submitted:
     if not erzaqlar.strip() and not cekilen_sekil:
@@ -282,7 +282,8 @@ if st.session_state.ai_response:
     with col_img:
         if st.session_state.recipe_title_eng:
             img_url = get_image_url(st.session_state.recipe_title_eng)
-            st.image(img_url, caption=f"📸 Unsplash: {st.session_state.recipe_title}")
+            # DƏYİŞİKLİK: Burada caption tamamilə silindi
+            st.image(img_url)
 
     with col_vid:
         st.markdown('<div class="section-title">📺 Hazırlanma Videosu</div>', unsafe_allow_html=True)
