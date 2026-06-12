@@ -97,7 +97,7 @@ div[data-testid="stImage"] img {
 
 
 # ====================================================================
-# 3. KÖMƏKÇİ FUNKSİYALAR (YENİLƏNDİ)
+# 3. KÖMƏKÇİ FUNKSİYALAR
 # ====================================================================
 
 def herfleri_temizle(metn):
@@ -124,23 +124,19 @@ def get_image_url(food_name_eng):
     if not tehlukesiz_ad:
         tehlukesiz_ad = "delicious food"
         
-    # Standart zəmanət şəkli (Heç nə tapılmasa və ya internet kəsilsə bu açılacaq)
     default_image = "https://images.unsplash.com/photo-1495147466023-e6a92040d64a?auto=format&fit=crop&w=1024&q=80"
         
     try:
-        # Streamlit Secrets-dən Unsplash açarını oxuyuruq
         UNSPLASH_API_KEY = st.secrets["UNSPLASH_API_KEY"]
-        
         url = f"https://api.unsplash.com/search/photos?page=1&query={urllib.parse.quote(tehlukesiz_ad + ' food')}&client_id={UNSPLASH_API_KEY}&per_page=1&orientation=landscape"
         
-        response = requests.get(url, timeout=3) # Maksimum 3 saniyə gözləyir
+        response = requests.get(url, timeout=3)
         data = response.json()
         
         if data.get('results') and len(data['results']) > 0:
             return data['results'][0]['urls']['regular']
             
     except Exception as e:
-        # API açarı səhvdirsə və ya yüklənmədisə, qorunma bloku işə düşür
         pass
 
     return default_image
@@ -155,13 +151,16 @@ if "recipe_title_eng" not in st.session_state:
     st.session_state.recipe_title_eng = None
 if "user_image" not in st.session_state:
     st.session_state.user_image = None
+# YENİ: Çatbot tarixçəsi üçün session state
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
 # Hero
 st.markdown('<div class="hero-block"><div class="hero-title">🍳 Evdə Nə Var?</div></div>', unsafe_allow_html=True)
 
 # Rejim
 st.markdown('<div class="section-title">⚙️ Rejim seçin</div>', unsafe_allow_html=True)
-rejim = st.radio("", ["🍽️ Adi Resept", "💪 İdmançı Rejimi", "👶 Uşaq Rejimi (1-2 yaş)"], horizontal=True, label_visibility="collapsed")
+rejim = st.radio("", ["🍽️ Adi Resept", "💪 İdmançı Rejimi", "👶 Uşaq Rejimi (1-2 yaş)", "🥗 Veqan/Vegetarian"], horizontal=True, label_visibility="collapsed")
 
 # ====================================================================
 # 4. FORM
@@ -200,6 +199,10 @@ with st.form("master_form"):
         st.markdown('<div class="section-title">👶 Uşaq (1-2 yaş) Parametrləri</div>', unsafe_allow_html=True)
         st.info("💡 Sistem daxil etdiyiniz ərzaqları xüsusi analiz edəcək: Hansı qidaların 1-2 yaşlı uşaqlar üçün uyğun olduğu, boğulma və ya allergiya riski barədə şefin peşəkar tövsiyələrini görəcəksiniz.")
 
+    if "🥗" in rejim:
+        st.markdown('<div class="section-title">🥗 Veqan/Vegetarian Parametrləri</div>', unsafe_allow_html=True)
+        st.info("💡 Sistem daxil etdiyiniz ərzaqları xüsusi analiz edəcək: Sizin üçün həm 100% veqan (heç bir heyvan mənşəli qida olmadan), həm də vegetarian (ət olmadan, lakin süd/yumurta ola bilən) iki fərqli resept və tövsiyə təqdim ediləcək.")
+
     submitted = st.form_submit_button("✨ Resepti və Şəkli Hazırla")
 
 # ====================================================================
@@ -210,6 +213,8 @@ if submitted:
         st.warning("⚠️ Zəhmət olmasa, ərzaqları yazın və ya şəklini çəkin!")
     else:
         st.session_state.user_image = cekilen_sekil
+        # YENİ: Yeni resept yaradılanda köhnə söhbət tarixçəsini təmizləyirik
+        st.session_state.chat_history = []
         
         with st.spinner("👩‍🍳 Süni İntellekt aşpazınız hazırlayır..."):
 
@@ -232,6 +237,7 @@ if submitted:
             3. Allergiyalara uyğun alternativlər təklif et.
             4. İdmançı rejimindədirsə kalori hesabla.
             5. Əgər 'Uşaq Rejimi (1-2 yaş)' seçilibsə: Daxil edilən ərzaqların 1-2 yaşlı uşaqlara uyğunluğunu analiz et. Təhlükəli (boğulma riski, çətin həzm olunan) ərzaqlar barədə valideyni xəbərdar et və onları reseptdən xaric et. Yalnız bu yaşa uyğun, sağlam, yumşaq qida resepti və tövsiyələri ver.
+            6. Əgər 'Veqan/Vegetarian' seçilibsə: Veqan və vegetarian qidalanmanın fərqli anlayışlar olduğunu mütləq nəzərə al. Daxil edilən ərzaqlarla eyni anda HƏM 100% Veqan (heç bir heyvan mənşəli məhsul, süd, yumurta, bal olmayan) üçün ayrıca resept və tövsiyə yaz, HƏM DƏ Vegetarian (ət xaric, lakin süd/yumurta məhsulları istifadə edilə bilən) üçün ayrıca fərqli resept və tövsiyə yaz. Hər iki qrupun fərqini qoruyaraq mütləq iki fərqli yanaşmanı bir yerdə təqdim et.
             """
 
             try:
@@ -272,12 +278,9 @@ if st.session_state.ai_response:
     if st.session_state.user_image:
         st.image(st.session_state.user_image, caption="📸 Sizin təqdim etdiyiniz ərzaqlar")
     
-    # --- YENİ: UNSPLASH İLƏ İLDIRIM SÜRƏTLİ ŞƏKİL ---
     if st.session_state.recipe_title_eng:
         img_url = get_image_url(st.session_state.recipe_title_eng)
-        
         st.image(img_url, caption=f"📸 Unsplash bazasından tapılmış real vizual: {st.session_state.recipe_title}")
-    # -----------------------------------------------
 
     # Allergik xəbərdarlıq
     if allergiyalar or xususi_allergiya:
@@ -288,14 +291,58 @@ if st.session_state.ai_response:
 
     # Resepti göstər
     st.markdown('<div class="result-box">', unsafe_allow_html=True)
-    
     text_to_show = st.session_state.ai_response
     text_to_show = re.sub(r'.*TITLE:.*\n?', '', text_to_show).strip()
-        
     st.markdown(text_to_show)
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.download_button("📥 Resepti Yadda Saxla", st.session_state.ai_response, "resept.txt")
+
+    # ====================================================================
+    # 7. CHATBOT BÖLMƏSİ (YENİ)
+    # ====================================================================
+    st.markdown("---")
+    st.markdown('<div class="section-title">💬 Şef ilə Söhbət</div>', unsafe_allow_html=True)
+    st.info("💡 Reseptlə bağlı əlavə suallarınız var? (məsələn: 'Qaymaq əvəzinə nə vura bilərəm?', 'Sobada neçə dərəcədə bişirim?'). Süni intellekt şefimizdən soruşun!")
+
+    # Əvvəlki mesajları göstəririk
+    for message in st.session_state.chat_history:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # İstifadəçinin yeni sualı
+    if prompt_sual := st.chat_input("Sualınızı bura yazın..."):
+        
+        # Sualı yaddaşa yaz və ekranda göstər
+        st.session_state.chat_history.append({"role": "user", "content": prompt_sual})
+        with st.chat_message("user"):
+            st.markdown(prompt_sual)
+
+        # Süni intellektin cavabı
+        with st.chat_message("assistant"):
+            with st.spinner("Şef düşünür..."):
+                
+                # Chat konteksti: Sualın məhz bu reseptlə bağlı olduğunu AI-yə xatırladırıq
+                chat_context = f"""
+                Sən peşəkar və mehriban aşpazsan. 
+                Sən az öncə istifadəçiyə bu resepti vermisən:
+                {st.session_state.ai_response}
+                
+                İstifadəçinin bu reseptlə bağlı sənə yeni sualı var: "{prompt_sual}"
+                
+                Tələblər:
+                1. Yalnız istifadəçinin sualına cavab ver.
+                2. Cavabın qısa, dəqiq və aydın olsun.
+                3. Cavabı Azərbaycan dilində yaz.
+                """
+                
+                try:
+                    chat_response = model.generate_content(chat_context)
+                    st.markdown(chat_response.text)
+                    # AI-nin cavabını yaddaşa yazırıq
+                    st.session_state.chat_history.append({"role": "assistant", "content": chat_response.text})
+                except Exception as e:
+                    st.error(f"Xəta yarandı: {e}")
 
 # Footer
 st.markdown('<div class="footer">Azərbaycan mətbəxi & AI texnologiyası</div>', unsafe_allow_html=True)
