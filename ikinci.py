@@ -161,7 +161,7 @@ st.markdown('<div class="hero-block"><div class="hero-title">🍳 Evdə Nə Var?
 
 # Rejim
 st.markdown('<div class="section-title">⚙️ Rejim seçin</div>', unsafe_allow_html=True)
-rejim = st.radio("", ["🍽️ Adi Resept", "💪 İdmançı Rejimi"], horizontal=True, label_visibility="collapsed")
+rejim = st.radio("", ["🍽️ Adi Resept", "💪 İdmançı Rejimi", "👶 Uşaq Rejimi (1-2 yaş)"], horizontal=True, label_visibility="collapsed")
 
 # ====================================================================
 # 4. FORM
@@ -195,6 +195,10 @@ with st.form("master_form"):
         c1, c2 = st.columns(2)
         çəki = c1.number_input("Çəki (kq)", 40, 200, 75)
         hədəf = c2.selectbox("Məqsəd", ["Kütlə artımı", "Yağ yandırma", "Güc"])
+        
+    if "👶" in rejim:
+        st.markdown('<div class="section-title">👶 Uşaq (1-2 yaş) Parametrləri</div>', unsafe_allow_html=True)
+        st.info("💡 Sistem daxil etdiyiniz ərzaqları xüsusi analiz edəcək: Hansı qidaların 1-2 yaşlı uşaqlar üçün uyğun olduğu, boğulma və ya allergiya riski barədə şefin peşəkar tövsiyələrini görəcəksiniz.")
 
     submitted = st.form_submit_button("✨ Resepti və Şəkli Hazırla")
 
@@ -227,6 +231,7 @@ if submitted:
                DİQQƏT: "|" işarəsini və İngiliscə tərcüməni YADDAN ÇIXARMA!
             3. Allergiyalara uyğun alternativlər təklif et.
             4. İdmançı rejimindədirsə kalori hesabla.
+            5. Əgər 'Uşaq Rejimi (1-2 yaş)' seçilibsə: Daxil edilən ərzaqların 1-2 yaşlı uşaqlara uyğunluğunu analiz et. Təhlükəli (boğulma riski, çətin həzm olunan) ərzaqlar barədə valideyni xəbərdar et və onları reseptdən xaric et. Yalnız bu yaşa uyğun, sağlam, yumşaq qida resepti və tövsiyələri ver.
             """
 
             try:
