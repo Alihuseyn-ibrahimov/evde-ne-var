@@ -2,7 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 import urllib.parse
 import re
-import requests  # YENİ: Unsplash-dan ildırım sürətilə şəkil çəkmək üçün
+import requests
 from PIL import Image
 
 # ====================================================================
@@ -19,7 +19,7 @@ model = genai.GenerativeModel('gemini-2.5-flash')
 st.set_page_config(
     page_title="Evdə Nə Var? — AI Resept Botu",
     page_icon="🍳",
-    layout="centered"
+    layout="wide" # Ekranı genişləndirdik ki, şəkil və video yan-yana qəşəng yerləşsin
 )
 
 st.markdown("""
@@ -104,38 +104,38 @@ def herfleri_temizle(metn):
     """ZİREH: Bütün xüsusi simvolları və yad hərfləri silir."""
     if not metn:
         return ""
-    
+
     deyismeler = {
         'ə': 'e', 'Ə': 'E', 'ı': 'i', 'İ': 'I', 'ö': 'o', 'Ö': 'O',
         'ğ': 'g', 'Ğ': 'G', 'ü': 'u', 'Ü': 'U', 'ş': 's', 'Ş': 'S', 'ç': 'c', 'Ç': 'C'
     }
     for az_herf, en_herf in deyismeler.items():
         metn = metn.replace(az_herf, en_herf)
-        
+
     metn = re.sub(r'[^a-zA-Z0-9\s]', '', metn)
     metn = re.sub(r'\s+', ' ', metn).strip()
-    
+
     return metn
 
 def get_image_url(food_name_eng):
     """Yeməyin adına uyğun olaraq Unsplash API-dən ildırım sürətilə real şəkil tapır"""
     tehlukesiz_ad = herfleri_temizle(food_name_eng)
-    
+
     if not tehlukesiz_ad:
         tehlukesiz_ad = "delicious food"
-        
+
     default_image = "https://images.unsplash.com/photo-1495147466023-e6a92040d64a?auto=format&fit=crop&w=1024&q=80"
-        
+
     try:
         UNSPLASH_API_KEY = st.secrets["UNSPLASH_API_KEY"]
         url = f"https://api.unsplash.com/search/photos?page=1&query={urllib.parse.quote(tehlukesiz_ad + ' food')}&client_id={UNSPLASH_API_KEY}&per_page=1&orientation=landscape"
-        
+
         response = requests.get(url, timeout=3)
         data = response.json()
-        
+
         if data.get('results') and len(data['results']) > 0:
             return data['results'][0]['urls']['regular']
-            
+
     except Exception as e:
         pass
 
@@ -147,11 +147,10 @@ if "ai_response" not in st.session_state:
     st.session_state.ai_response = None
 if "recipe_title" not in st.session_state:
     st.session_state.recipe_title = None
-if "recipe_title_eng" not in st.session_state: 
+if "recipe_title_eng" not in st.session_state:
     st.session_state.recipe_title_eng = None
 if "user_image" not in st.session_state:
     st.session_state.user_image = None
-# YENİ: Çatbot tarixçəsi üçün session state
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
@@ -194,7 +193,7 @@ with st.form("master_form"):
         c1, c2 = st.columns(2)
         çəki = c1.number_input("Çəki (kq)", 40, 200, 75)
         hədəf = c2.selectbox("Məqsəd", ["Kütlə artımı", "Yağ yandırma", "Güc"])
-        
+
     if "👶" in rejim:
         st.markdown('<div class="section-title">👶 Uşaq (1-2 yaş) Parametrləri</div>', unsafe_allow_html=True)
         st.info("💡 Sistem daxil etdiyiniz ərzaqları xüsusi analiz edəcək: Hansı qidaların 1-2 yaşlı uşaqlar üçün uyğun olduğu, boğulma və ya allergiya riski barədə şefin peşəkar tövsiyələrini görəcəksiniz.")
@@ -206,22 +205,22 @@ with st.form("master_form"):
     submitted = st.form_submit_button("✨ Resepti və Şəkli Hazırla")
 
 # ====================================================================
-# 5. AI GENERASİYA
+# 5. AI GENERASİYA (Əksik olan bloklar bərpa edildi!)
 # ====================================================================
 if submitted:
     if not erzaqlar.strip() and not cekilen_sekil:
         st.warning("⚠️ Zəhmət olmasa, ərzaqları yazın və ya şəklini çəkin!")
     else:
         st.session_state.user_image = cekilen_sekil
-        # YENİ: Yeni resept yaradılanda köhnə söhbət tarixçəsini təmizləyirik
+        # Yeni resept yaradılanda köhnə söhbət tarixçəsini təmizləyirik
         st.session_state.chat_history = []
-        
+
         with st.spinner("👩‍🍳 Süni İntellekt aşpazınız hazırlayır..."):
 
             allergy_info = ", ".join(allergiyalar) + (f", {xususi_allergiya}" if xususi_allergiya else "")
 
             prompt = f"""
-            Sən peşəkar aşpazsan. 
+            Sən peşəkar aşpazsan.
             Ərzaqlar: {erzaqlar}
             Allergiyalar (BUNLARI QƏTİ İSTİFADƏ ETMƏ): {allergy_info}
             Mətbəx: {metbex}
@@ -230,7 +229,7 @@ if submitted:
 
             Tələblər:
             1. Resepti {dil} dilində yaz.
-            2. ƏN BAŞDA BİRİNCİ SƏTİRDƏ MÜTLƏQ BU FORMATDA AD YAZ: 
+            2. ƏN BAŞDA BİRİNCİ SƏTİRDƏ MÜTLƏQ BU FORMATDA AD YAZ:
                TITLE: [Yerli dildə ad] | [İngiliscə tərcüməsi]
                NÜMUNƏ: TITLE: Quzu Qovurması | Lamb Stew
                DİQQƏT: "|" işarəsini və İngiliscə tərcüməni YADDAN ÇIXARMA!
@@ -270,7 +269,7 @@ if submitted:
                 st.error(f"Xəta: {e}")
 
 # ====================================================================
-# 6. NƏTİCƏNİN GÖSTƏRİLMƏSİ
+# 6. NƏTİCƏNİN GÖSTƏRİLMƏSİ (ŞƏKİL VƏ VİDEO YAN-YANA)
 # ====================================================================
 if st.session_state.ai_response:
     st.markdown("---")
@@ -278,9 +277,25 @@ if st.session_state.ai_response:
     if st.session_state.user_image:
         st.image(st.session_state.user_image, caption="📸 Sizin təqdim etdiyiniz ərzaqlar")
     
-    if st.session_state.recipe_title_eng:
-        img_url = get_image_url(st.session_state.recipe_title_eng)
-        st.image(img_url, caption=f"📸 Unsplash bazasından tapılmış real vizual: {st.session_state.recipe_title}")
+    col_img, col_vid = st.columns(2)
+    
+    with col_img:
+        if st.session_state.recipe_title_eng:
+            img_url = get_image_url(st.session_state.recipe_title_eng)
+            st.image(img_url, caption=f"📸 Unsplash: {st.session_state.recipe_title}")
+
+    with col_vid:
+        st.markdown('<div class="section-title">📺 Hazırlanma Videosu</div>', unsafe_allow_html=True)
+        st.info("Süni intellektlə canlı video generasiyası çox vaxt apardığı üçün, bu yeməyin addım-addım hazırlanma qaydasını real şeflərdən izləyə bilərsiniz.")
+        
+        if st.session_state.recipe_title_eng:
+            # YouTube axtarış linkini dinamik olaraq yaradırıq
+            youtube_query = urllib.parse.quote(f"{st.session_state.recipe_title_eng} recipe step by step")
+            youtube_url = f"https://www.youtube.com/results?search_query={youtube_query}"
+            
+            st.link_button("▶️ YouTube-da İzlə (Altyazılı)", youtube_url, use_container_width=True)
+
+    st.markdown("---")
 
     # Allergik xəbərdarlıq
     if allergiyalar or xususi_allergiya:
@@ -299,7 +314,7 @@ if st.session_state.ai_response:
     st.download_button("📥 Resepti Yadda Saxla", st.session_state.ai_response, "resept.txt")
 
     # ====================================================================
-    # 7. CHATBOT BÖLMƏSİ (YENİ)
+    # 7. CHATBOT BÖLMƏSİ
     # ====================================================================
     st.markdown("---")
     st.markdown('<div class="section-title">💬 Şef ilə Söhbət</div>', unsafe_allow_html=True)
@@ -322,7 +337,6 @@ if st.session_state.ai_response:
         with st.chat_message("assistant"):
             with st.spinner("Şef düşünür..."):
                 
-                # Chat konteksti: Sualın məhz bu reseptlə bağlı olduğunu AI-yə xatırladırıq
                 chat_context = f"""
                 Sən peşəkar və mehriban aşpazsan. 
                 Sən az öncə istifadəçiyə bu resepti vermisən:
@@ -339,7 +353,6 @@ if st.session_state.ai_response:
                 try:
                     chat_response = model.generate_content(chat_context)
                     st.markdown(chat_response.text)
-                    # AI-nin cavabını yaddaşa yazırıq
                     st.session_state.chat_history.append({"role": "assistant", "content": chat_response.text})
                 except Exception as e:
                     st.error(f"Xəta yarandı: {e}")
