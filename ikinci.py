@@ -14,83 +14,117 @@ genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-2.5-flash')
 
 # ====================================================================
-# 2. VİZUAL DİZAYN
+# 2. VİZUAL DİZAYN (ŞRİFT XƏTASI HƏLL EDİLDİ)
 # ====================================================================
 st.set_page_config(
     page_title="Evdə Nə Var? — AI Resept Botu",
     page_icon="🍳",
-    layout="wide" 
+    layout="wide"
 )
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap');
+/* DƏYİŞİKLİK: Cinzel şrifti Playfair Display ilə əvəz olundu */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
 :root {
-  --nar:     #C0392B;
-  --qizil:   #D4A017;
-  --yaşıl:   #1A6B3A;
-  --fon:     #FDF6EC;
-  --tund:    #1C1008;
-  --krem:    #F5E6C8;
-  --işıq:    #FFF8F0;
+  --esas-fon: #E7EAE0;  /* Gözü dincəldən sakit adaçayı fonu */
+  --qutu-fon: #F3F5F0;  /* Kontrastı qoruyan açıq ton */
+  --metn-tund: #2B2C28; /* Charcoal boz */
+  --metn-aciq: #7A7C75; /* İkincili mətnlər */
+  --terrakota: #D36C55; /* Vurğu rəngi */
+  --haşiyə: #DDE0D7;    /* Yaşıl tona uyğunlaşdırılmış incə sərhəd */
 }
 
+/* Əsas Fon */
 .stApp {
-  background-color: var(--fon);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23D4A017' stroke-width='0.6' opacity='0.25'%3E%3Cpolygon points='40,8 47,20 60,20 52,30 56,43 40,36 24,43 28,30 20,20 33,20' /%3E%3Crect x='2' y='2' width='76' height='76' rx='4' /%3E%3C/g%3E%3C/svg%3E");
-  background-size: 80px 80px;
+  background-color: var(--esas-fon);
+  font-family: 'Inter', sans-serif;
+  background-image: none;
 }
 
+/* Minimalist Başlıq (Hero Block) */
 .hero-block {
-  background: linear-gradient(135deg, var(--nar) 0%, #8B1A1A 50%, #5C0E0E 100%);
-  border-radius: 20px;
-  padding: 2rem;
+  background: var(--qutu-fon);
+  border-radius: 16px;
+  padding: 2.5rem;
   text-align: center;
-  box-shadow: 0 8px 32px rgba(192,57,43,0.35);
-  margin-bottom: 1.5rem;
+  border: 1px solid var(--haşiyə);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+  margin-bottom: 2rem;
 }
 
 .hero-title {
-  font-family: 'Cinzel', serif;
-  font-size: 2.2rem;
-  color: #FFD700;
+  /* DƏYİŞİKLİK: Yeni şrift bura tətbiq olundu */
+  font-family: 'Playfair Display', serif;
+  font-size: 2.4rem;
+  color: var(--metn-tund);
+  letter-spacing: -0.5px;
+  font-weight: 700;
 }
 
+.hero-subtitle {
+  color: var(--terrakota);
+  font-size: 1rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Bölmə Başlıqları */
 .section-title {
-  font-family: 'Cinzel', serif;
-  font-size: 1.1rem;
-  color: var(--nar);
+  /* DƏYİŞİKLİK: Yeni şrift bura tətbiq olundu */
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  color: var(--metn-tund);
   font-weight: 600;
-  border-bottom: 2px solid var(--krem);
+  border-bottom: 1px solid var(--haşiyə);
   padding-bottom: 0.4rem;
   margin-top: 1.2rem;
   margin-bottom: 0.8rem;
 }
 
+/* Forma Qutusu */
 div[data-testid="stForm"] {
-  background: var(--işıq);
-  border: 2px solid rgba(212,160,23,0.4) !important;
-  padding: 2rem !important;
+  background: var(--qutu-fon) !important;
+  border: 1px solid var(--haşiyə) !important;
+  padding: 2.5rem !important;
   border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.02) !important;
 }
 
-/* st.image üçün dizayn (Qızılı Çərçivə) */
+/* Yumşaq Kölgəli Şəkillər */
 div[data-testid="stImage"] img {
-    border-radius: 15px !important;
-    border: 3px solid var(--qizil) !important;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--haşiyə) !important;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.04) !important;
     margin-bottom: 20px;
 }
 
+/* Allergik Xəbərdarlıq (Daha Zərif) */
 .allergy-warning {
-    background-color: #FDEDEC;
-    border-left: 5px solid #E74C3C;
-    padding: 10px;
-    color: #943126;
-    font-size: 0.9rem;
-    border-radius: 5px;
+    background-color: rgba(211, 108, 85, 0.05);
+    border-left: 4px solid var(--terrakota);
+    padding: 12px 16px;
+    color: var(--terrakota);
+    font-size: 0.95rem;
+    border-radius: 4px 8px 8px 4px;
     margin-bottom: 15px;
+}
+
+/* Minimalist və Zövqlü Təsdiq Düyməsi */
+div[data-testid="stFormSubmitButton"] button {
+    background-color: var(--metn-tund) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease;
+    padding: 0.5rem 1rem !important;
+}
+div[data-testid="stFormSubmitButton"] button:hover {
+    background-color: var(--terrakota) !important;
+    box-shadow: 0 4px 12px rgba(211, 108, 85, 0.2) !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -154,8 +188,8 @@ if "user_image" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# Hero
-st.markdown('<div class="hero-block"><div class="hero-title">🍳 Evdə Nə Var?</div></div>', unsafe_allow_html=True)
+# Hero (İndi kiçik hərflərlə yazsanız da, olduğu kimi görünəcək və ə hərfi problem yaratmayacaq)
+st.markdown('<div class="hero-block"><div class="hero-title">🍳 Evdə Nə Var?- ərzaqını yaz, mükəmməl resept verək</div><div class="hero-subtitle">Şef Əlihüseynin mətbəx sirləri</div></div>', unsafe_allow_html=True)
 
 # Rejim
 st.markdown('<div class="section-title">⚙️ Rejim seçin</div>', unsafe_allow_html=True)
@@ -212,7 +246,6 @@ if submitted:
         st.warning("⚠️ Zəhmət olmasa, ərzaqları yazın və ya şəklini çəkin!")
     else:
         st.session_state.user_image = cekilen_sekil
-        # Yeni resept yaradılanda köhnə söhbət tarixçəsini təmizləyirik
         st.session_state.chat_history = []
 
         with st.spinner("👩‍🍳 Süni İntellekt aşpazınız hazırlayır..."):
@@ -247,10 +280,8 @@ if submitted:
                     response = model.generate_content(prompt)
 
                 full_text = response.text
-
-                # Markdown ulduzlarını təmizləyirik
                 clean_text = full_text.replace("**", "")
-                
+
                 if "TITLE:" in clean_text:
                     title_line = clean_text.split("TITLE:")[1].split("\n")[0].strip()
                     if "|" in title_line:
@@ -269,43 +300,39 @@ if submitted:
                 st.error(f"Xəta: {e}")
 
 # ====================================================================
-# 6. NƏTİCƏNİN GÖSTƏRİLMƏSİ (ŞƏKİL VƏ VİDEO YAN-YANA)
+# 6. NƏTİCƏNİN GÖSTƏRİLMƏSİ
 # ====================================================================
 if st.session_state.ai_response:
     st.markdown("---")
-    
+
     if st.session_state.user_image:
         st.image(st.session_state.user_image, caption="📸 Sizin təqdim etdiyiniz ərzaqlar")
-    
+
     col_img, col_vid = st.columns(2)
-    
+
     with col_img:
         if st.session_state.recipe_title_eng:
             img_url = get_image_url(st.session_state.recipe_title_eng)
-            # DƏYİŞİKLİK: Burada caption tamamilə silindi
             st.image(img_url)
 
     with col_vid:
         st.markdown('<div class="section-title">📺 Hazırlanma Videosu</div>', unsafe_allow_html=True)
         st.info("Süni intellektlə canlı video generasiyası çox vaxt apardığı üçün, bu yeməyin addım-addım hazırlanma qaydasını real şeflərdən izləyə bilərsiniz.")
-        
+
         if st.session_state.recipe_title_eng:
-            # YouTube axtarış linkini dinamik olaraq yaradırıq
             youtube_query = urllib.parse.quote(f"{st.session_state.recipe_title_eng} recipe step by step")
             youtube_url = f"https://www.youtube.com/results?search_query={youtube_query}"
-            
-            st.link_button("▶️ YouTube-da İzlə (Altyazılı)", youtube_url, use_container_width=True)
+
+            st.link_button("▶️ YouTube-da İzlə", youtube_url, use_container_width=True)
 
     st.markdown("---")
 
-    # Allergik xəbərdarlıq
     if allergiyalar or xususi_allergiya:
         allergy_info = ", ".join(allergiyalar) + (f", {xususi_allergiya}" if xususi_allergiya else "")
         st.markdown(
             f'<div class="allergy-warning">ℹ️ Bu resept sizin <b>{allergy_info}</b> allergiyanız nəzərə alınaraq hazırlanmışdır.</div>',
             unsafe_allow_html=True)
 
-    # Resepti göstər
     st.markdown('<div class="result-box">', unsafe_allow_html=True)
     text_to_show = st.session_state.ai_response
     text_to_show = re.sub(r'.*TITLE:.*\n?', '', text_to_show).strip()
@@ -319,38 +346,34 @@ if st.session_state.ai_response:
     # ====================================================================
     st.markdown("---")
     st.markdown('<div class="section-title">💬 Şef ilə Söhbət</div>', unsafe_allow_html=True)
-    st.info("💡 Reseptlə bağlı əlavə suallarınız var? (məsələn: 'Qaymaq əvəzinə nə vura bilərəm?', 'Sobada neçə dərəcədə bişirim?'). Süni intellekt şefimizdən soruşun!")
+    st.info("💡 Reseptlə bağlı əlavə suallarınız var? Süni intellekt şefimizdən soruşun!")
 
-    # Əvvəlki mesajları göstəririk
     for message in st.session_state.chat_history:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # İstifadəçinin yeni sualı
     if prompt_sual := st.chat_input("Sualınızı bura yazın..."):
-        
-        # Sualı yaddaşa yaz və ekranda göstər
+
         st.session_state.chat_history.append({"role": "user", "content": prompt_sual})
         with st.chat_message("user"):
             st.markdown(prompt_sual)
 
-        # Süni intellektin cavabı
         with st.chat_message("assistant"):
             with st.spinner("Şef düşünür..."):
-                
+
                 chat_context = f"""
-                Sən peşəkar və mehriban aşpazsan. 
+                Sən peşəkar və mehriban aşpazsan.
                 Sən az öncə istifadəçiyə bu resepti vermisən:
                 {st.session_state.ai_response}
-                
+
                 İstifadəçinin bu reseptlə bağlı sənə yeni sualı var: "{prompt_sual}"
-                
+
                 Tələblər:
                 1. Yalnız istifadəçinin sualına cavab ver.
                 2. Cavabın qısa, dəqiq və aydın olsun.
                 3. Cavabı Azərbaycan dilində yaz.
                 """
-                
+
                 try:
                     chat_response = model.generate_content(chat_context)
                     st.markdown(chat_response.text)
@@ -359,4 +382,4 @@ if st.session_state.ai_response:
                     st.error(f"Xəta yarandı: {e}")
 
 # Footer
-st.markdown('<div class="footer">Azərbaycan mətbəxi & AI texnologiyası</div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align: center; margin-top: 2rem; color: #7A7C75; font-size: 0.9rem;">Azərbaycan Mətbəxi & Süni İntellekt</div>', unsafe_allow_html=True)
